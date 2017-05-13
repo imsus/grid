@@ -1,0 +1,104 @@
+<style>
+* {
+	padding: 0;
+	margin: 0;
+	font-family: Arial, "Liberation Sans", sans-serif;
+}
+body {
+	display: grid;
+	grid-template:
+		" left right " auto
+		" footer footer " 50px
+		/ auto 499px;
+}
+
+#generated-grid {
+	display: grid;
+	grid-template: 100px repeat(4, 1fr) / 100px repeat(2, 1fr);
+	padding: 0 50px 50px 0;
+}
+#generated-grid *:not(.input) {
+	border: 1px solid black;
+}
+
+.input {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+input {
+	width: 80px;
+	padding: 0.5em;
+	border-color: #777;
+	text-align: center;
+}
+
+#output {
+	padding: 50px 50px 50px 0;
+	font-family: monospace;
+}
+
+footer {
+	grid-area: footer;
+	background: #111;
+	color: #f7f7f7;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+a {
+	text-decoration: none;
+	color: #55F;
+}
+</style>
+
+<!-- data-cell is row,col -->
+
+<section id="generated-grid" style="grid-area: left">
+	<div class="input"><input type="button" onclick="update()" value="Update"></div>
+	<div class="input"><input type="text" id="col1"></div>
+	<div class="input"><input type="text" id="col2"></div>
+	<div class="input"><input type="text" id="row1"></div>
+	<div data-cell="1,1"></div>
+	<div data-cell="1,2"></div>
+	<div class="input"><input type="text" id="row2"></div>
+	<div data-cell="2,1"></div>
+	<div data-cell="2,2"></div>
+	<div class="input"><input type="text" id="row3"></div>
+	<div data-cell="3,1"></div>
+	<div data-cell="3,2"></div>
+	<div class="input"><input type="text" id="row4"></div>
+	<div data-cell="4,1"></div>
+	<div data-cell="4,2"></div>
+</section>
+
+<section id="output" style="grid-area: right">grid-template: 1fr 1fr 1fr 1fr / 1fr 1fr;</section>
+
+<footer>Created&nbsp;by&nbsp;Jacob&nbsp;Pratt.&nbsp;GPL-3.0&nbsp;license.&nbsp;<a href="https://github.com/jhpratt/grid">Source&nbsp;code</a>.</footer>
+
+<script>
+"use strict";
+let numRows = 4;
+let numCols = 2;
+let grid = document.getElementById("generated-grid");
+function update() {
+	// start with ['100px'] for labels and buttons
+	let rows = ['100px'];
+	let cols = ['100px'];
+	for( let i=1; i<=numRows; i++ )
+		rows.push( document.getElementById("row"+i).value );
+	for( let i=1; i<=numCols; i++ )
+		cols.push( document.getElementById("col"+i).value );
+	
+	// update display
+	let format = rows.join(" ") + " / " + cols.join(" ");
+	document.getElementById("generated-grid").style['grid-template'] = format;
+
+	// display code
+	let dispFormat = rows.slice(1).join(" ") + " / " + cols.slice(1).join(" ");
+	document.getElementById("output").innerHTML = "grid-template: " + dispFormat + ";";
+}
+</script>
+
