@@ -7,13 +7,15 @@
 body {
 	display: grid;
 	grid-template:
+		" left buttons " 200px
 		" left right " auto
 		" footer footer " 50px
-		/ auto 499px;
+		/ auto 500px;
 }
 
 #generated-grid {
 	display: grid;
+	grid-area: left;
 	grid-template: 100px repeat(4, 1fr) / 100px repeat(2, 1fr);
 	padding: 0 50px 50px 0;
 }
@@ -30,13 +32,24 @@ body {
 input {
 	width: 80px;
 	padding: 0.5em;
-	border-color: #777;
 	text-align: center;
 }
 
 #output {
-	padding: 50px 50px 50px 0;
+	padding: 0 50px 50px 0;
 	font-family: monospace;
+}
+#buttons {
+	grid-area: buttons;
+	padding: 50px 50px 50px 0;
+}
+#buttons > div {
+	display: grid;
+	grid-template: repeat(2, 1fr) / repeat(2, 1fr);
+	grid-gap: 6px;
+}
+#buttons > div input {
+	width: auto;
 }
 
 footer {
@@ -56,22 +69,31 @@ a {
 
 <!-- data-cell is row,col -->
 
-<section id="generated-grid" style="grid-area: left">
-	<div class="input"><input type="button" onclick="update()" value="Update"></div>
-	<div class="input"><input type="text" id="col1"></div>
-	<div class="input"><input type="text" id="col2"></div>
-	<div class="input"><input type="text" id="row1"></div>
+<section id="generated-grid">
+	<div class="input"></div>
+	<div class="input"><input type="text" id="col1" value="1fr"></div>
+	<div class="input"><input type="text" id="col2" value="1fr"></div>
+	<div class="input"><input type="text" id="row1" value="1fr"></div>
 	<div data-cell="1,1"></div>
 	<div data-cell="1,2"></div>
-	<div class="input"><input type="text" id="row2"></div>
+	<div class="input"><input type="text" id="row2" value="1fr"></div>
 	<div data-cell="2,1"></div>
 	<div data-cell="2,2"></div>
-	<div class="input"><input type="text" id="row3"></div>
+	<div class="input"><input type="text" id="row3" value="1fr"></div>
 	<div data-cell="3,1"></div>
 	<div data-cell="3,2"></div>
-	<div class="input"><input type="text" id="row4"></div>
+	<div class="input"><input type="text" id="row4" value="1fr"></div>
 	<div data-cell="4,1"></div>
 	<div data-cell="4,2"></div>
+</section>
+
+<section id="buttons">
+	<div>
+		<input type="button" onclick="addRow()" value="Add row">
+		<input type="button" onclick="remRow()" value="Delete row">
+		<input type="button" onclick="addCol()" value="Add column">
+		<input type="button" onclick="remCol()" value="Delete column">
+	</div>
 </section>
 
 <section id="output" style="grid-area: right">grid-template: 1fr 1fr 1fr 1fr / 1fr 1fr;</section>
@@ -100,5 +122,82 @@ function update() {
 	let dispFormat = rows.slice(1).join(" ") + " / " + cols.slice(1).join(" ");
 	document.getElementById("output").innerHTML = "grid-template: " + dispFormat + ";";
 }
+function addRow() {
+	numRows++;
+	reflow(1,0);
+}
+function remRow() {
+	numRows--;
+	reflow(0,0);
+}
+function addCol() {
+	numCols++;
+	reflow(0,1);
+}
+function remCol() {
+	numCols--;
+	reflow(0,0);
+}
+
+function reflow(newRow=0, newCol=0) {
+	let parent = document.getElementById("generated-grid");
+	// before adding elements
+	let rows = ['100px'];
+	let cols = ['100px'];
+	for( let i=1; i<=numRows-newRow; i++ )
+		try { rows.push( document.getElementById("row"+i).value ); }
+		catch(e) { console.log(i); }
+	for( let i=1; i<=numCols-newCol; i++ )
+		cols.push( document.getElementById("col"+i).value );
+	
+	if( newRow ) rows.push( "1fr" );
+	if( newCol ) cols.push( "1fr" );
+	
+	parent.innerHTML = "";
+	
+	for( let row in rows ) {
+		for( let col in cols ) {
+			let noborder = ( row==0 || col==0 );
+			if( row == 0 ) {
+				let elem = document.createElement("div");
+				if( noborder ) elem.className = "input";
+				if( col == 0 ) { parent.appendChild( elem ); continue; }
+				
+				let input = document.createElement("input");
+				input.setAttribute( "type", "text" );
+				input.setAttribute( "id", "col"+col );
+				let val = ( cols[col] == "" ) ? "1fr" : cols[col];
+				input.setAttribute( "value", val ); // if statement / use previous value if exists
+				elem.appendChild( input );
+				parent.appendChild( elem );
+			}
+			else {
+				let elem = document.createElement("div");
+				if( col == 0 ) {
+					if( noborder ) elem.className = "input";
+					let input = document.createElement("input");
+					input.setAttribute( "type", "text" );
+					input.setAttribute( "id", "row"+row );
+					let val = ( rows[row] == "" ) ? "1fr" : rows[row];
+					input.setAttribute( "value", val ); // if statement / use previous value if exists
+					elem.appendChild( input );
+				}
+				else {
+					elem.setAttribute( "data-cell", row+","+col );
+				}
+				parent.appendChild( elem );
+			}
+		}
+	}
+	addOnBlur();
+	update();
+}
+
+function addOnBlur() {
+	document.querySelectorAll("input[type='text']").forEach( (elem) => {
+		elem.addEventListener( "blur", function() { update(); } );
+	});
+}
+addOnBlur();
 </script>
 
