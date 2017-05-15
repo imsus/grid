@@ -16,14 +16,14 @@ body {
 #generated-grid {
 	display: grid;
 	grid-area: left;
-	grid-template: 100px repeat(4, 1fr) / 100px repeat(2, 1fr);
+	grid-template: 100px repeat(2, 1fr) / 100px repeat(2, 1fr);
 	padding: 0 50px 50px 0;
 }
 #generated-grid *:not(.input) {
 	border: 1px solid black;
 }
 
-.input {
+#generated-grid * {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -79,12 +79,6 @@ a {
 	<div class="input"><input type="text" id="row2" value="1fr"></div>
 	<div data-cell="2,1"></div>
 	<div data-cell="2,2"></div>
-	<div class="input"><input type="text" id="row3" value="1fr"></div>
-	<div data-cell="3,1"></div>
-	<div data-cell="3,2"></div>
-	<div class="input"><input type="text" id="row4" value="1fr"></div>
-	<div data-cell="4,1"></div>
-	<div data-cell="4,2"></div>
 </section>
 
 <section id="buttons">
@@ -96,15 +90,22 @@ a {
 	</div>
 </section>
 
-<section id="output" style="grid-area: right">grid-template: 1fr 1fr 1fr 1fr / 1fr 1fr;</section>
+<section id="output" style="grid-area: right">grid-template: 1fr 1fr / 1fr 1fr;</section>
 
 <footer>Created&nbsp;by&nbsp;Jacob&nbsp;Pratt.&nbsp;GPL-3.0&nbsp;license.&nbsp;<a href="https://github.com/jhpratt/grid">Source&nbsp;code</a>.</footer>
 
 <script>
 "use strict";
-let numRows = 4;
+let numRows = 2;
 let numCols = 2;
+
+let regionsArray = [
+	[ null, null ],
+	[ null, null ]
+];
+
 let grid = document.getElementById("generated-grid");
+
 function update() {
 	// start with ['100px'] for labels and buttons
 	let rows = ['100px'];
@@ -122,25 +123,40 @@ function update() {
 	let dispFormat = rows.slice(1).join(" ") + " / " + cols.slice(1).join(" ");
 	document.getElementById("output").innerHTML = "grid-template: " + dispFormat + ";";
 }
+
+function nameRegions() {
+	for( let child of grid.children ) {
+		let loc = child.getAttribute("data-cell");
+		if( loc === null ) continue;
+		let [row, col] = loc.split(",");
+		let name = regionsArray[row-1][col-1];
+		if( name !== null ) child.innerHTML = name;
+	}
+}
+
 function addRow() {
 	numRows++;
 	reflow(1,0);
+	regionsArray.push( new Array( numCols ).fill( null ) );
 }
 function remRow() {
 	numRows--;
 	reflow(0,0);
+	regionsArray.pop();
 }
 function addCol() {
 	numCols++;
 	reflow(0,1);
+	regionsArray.forEach( (arr) => arr.push( null ) );
 }
 function remCol() {
 	numCols--;
 	reflow(0,0);
+	regionsArray.forEach( (arr) => arr.pop() );
 }
 
 function reflow(newRow=0, newCol=0) {
-	let parent = document.getElementById("generated-grid");
+	let parent = grid;
 	// before adding elements
 	let rows = ['100px'];
 	let cols = ['100px'];
@@ -199,5 +215,15 @@ function addOnBlur() {
 	});
 }
 addOnBlur();
+
+// onclick if is box
+document.getElementById("generated-grid").addEventListener( "click", (e) => {
+	let loc = e.target.getAttribute("data-cell");
+	if( loc !== null ) {
+		let [row, col] = loc.split(",");
+		console.log( row, col );
+	}
+}, false );
+
 </script>
 
