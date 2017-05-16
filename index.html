@@ -92,7 +92,7 @@ a {
 	</div>
 </section>
 
-<section id="output" style="grid-area: right">grid-template: 1fr 1fr / 1fr 1fr;</section>
+<pre id="output" style="grid-area: right">grid-template: 1fr 1fr / 1fr 1fr;</pre>
 
 <footer>Created by Jacob Pratt. GPL-3.0 license.&nbsp;<a href="https://github.com/jhpratt/grid">Source code</a>.</footer>
 
@@ -102,8 +102,8 @@ let numRows = 2;
 let numCols = 2;
 
 let regions = [
-	[ null, null ],
-	[ null, null ]
+	[ ".", "." ],
+	[ ".", "." ]
 ];
 
 let addingRegion = false;
@@ -127,8 +127,12 @@ function update() {
 	document.getElementById("generated-grid").style['grid-template'] = format;
 
 	// display code
-	let dispFormat = rows.slice(1).join(" ") + " / " + cols.slice(1).join(" ");
-	document.getElementById("output").innerHTML = "grid-template: " + dispFormat + ";";
+	let formattedCode = "grid-template:<br/>";
+	let formatRow = (i) => "\" " + regions[i].join(" ") + " \" " + rows[i+1];
+	for( let i=0; i<numRows; i++ ) formattedCode += "    " + formatRow(i) + "<br/>";
+	formattedCode += "    / " + cols.slice(1).join(" ");
+	formattedCode += ";";
+	document.getElementById("output").innerHTML = formattedCode;
 }
 
 function nameRegions() {
@@ -137,31 +141,31 @@ function nameRegions() {
 		if( loc === null ) continue;
 		let [row, col] = loc.split(",");
 		let name = regions[row-1][col-1];
-		if( name !== null ) child.innerHTML = name;
+		if( name !== "." ) child.innerHTML = name;
 	}
 }
 
 function addRow() {
 	numRows++;
+	regions.push( new Array( numCols ).fill(".") );
 	reflow(1,0);
-	regions.push( new Array( numCols ).fill( null ) );
 }
 function remRow() {
 	if( numRows == 1 ) return;
 	numRows--;
-	reflow(0,0);
 	regions.pop();
+	reflow(0,0);
 }
 function addCol() {
 	numCols++;
+	regions.forEach( (arr) => arr.push(".") );
 	reflow(0,1);
-	regions.forEach( (arr) => arr.push( null ) );
 }
 function remCol() {
 	if( numCols == 1 ) return;
 	numCols--;
-	reflow(0,0);
 	regions.forEach( (arr) => arr.pop() );
+	reflow(0,0);
 }
 
 function reflow(newRow=0, newCol=0) {
@@ -261,6 +265,7 @@ document.getElementById("generated-grid").addEventListener( "click", (e) => {
 			topLeft = null;
 			bottomRight = null;
 			document.getElementById("messages").innerHTML = "";
+			update(); // prints code
 		}
 	}
 }, false );
