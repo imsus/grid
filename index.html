@@ -45,7 +45,7 @@ input {
 }
 #buttons > div {
 	display: grid;
-	grid-template: repeat(2, 1fr) / repeat(2, 1fr);
+	grid-template: repeat(4, 1fr) / repeat(2, 1fr);
 	grid-gap: 6px;
 }
 #buttons > div input {
@@ -87,22 +87,29 @@ a {
 		<input type="button" onclick="remRow()" value="Delete row">
 		<input type="button" onclick="addCol()" value="Add column">
 		<input type="button" onclick="remCol()" value="Delete column">
+		<input type="button" onclick="addRegion()" style="grid-column: span 2" value="Add region">
+		<div id="messages" style="grid-column: span 2"></div>
 	</div>
 </section>
 
 <section id="output" style="grid-area: right">grid-template: 1fr 1fr / 1fr 1fr;</section>
 
-<footer>Created&nbsp;by&nbsp;Jacob&nbsp;Pratt.&nbsp;GPL-3.0&nbsp;license.&nbsp;<a href="https://github.com/jhpratt/grid">Source&nbsp;code</a>.</footer>
+<footer>Created by Jacob Pratt. GPL-3.0 license.&nbsp;<a href="https://github.com/jhpratt/grid">Source code</a>.</footer>
 
 <script>
 "use strict";
 let numRows = 2;
 let numCols = 2;
 
-let regionsArray = [
+let regions = [
 	[ null, null ],
 	[ null, null ]
 ];
+
+let addingRegion = false;
+let topLeft = null;
+let bottomRight = null; // store corners for regions (temporary)
+let regionName = null;
 
 let grid = document.getElementById("generated-grid");
 
@@ -129,7 +136,7 @@ function nameRegions() {
 		let loc = child.getAttribute("data-cell");
 		if( loc === null ) continue;
 		let [row, col] = loc.split(",");
-		let name = regionsArray[row-1][col-1];
+		let name = regions[row-1][col-1];
 		if( name !== null ) child.innerHTML = name;
 	}
 }
@@ -137,39 +144,38 @@ function nameRegions() {
 function addRow() {
 	numRows++;
 	reflow(1,0);
-	regionsArray.push( new Array( numCols ).fill( null ) );
+	regions.push( new Array( numCols ).fill( null ) );
 }
 function remRow() {
+	if( numRows == 1 ) return;
 	numRows--;
 	reflow(0,0);
-	regionsArray.pop();
+	regions.pop();
 }
 function addCol() {
 	numCols++;
 	reflow(0,1);
-	regionsArray.forEach( (arr) => arr.push( null ) );
+	regions.forEach( (arr) => arr.push( null ) );
 }
 function remCol() {
+	if( numCols == 1 ) return;
 	numCols--;
 	reflow(0,0);
-	regionsArray.forEach( (arr) => arr.pop() );
+	regions.forEach( (arr) => arr.pop() );
 }
 
 function reflow(newRow=0, newCol=0) {
-	let parent = grid;
-	// before adding elements
 	let rows = ['100px'];
 	let cols = ['100px'];
 	for( let i=1; i<=numRows-newRow; i++ )
-		try { rows.push( document.getElementById("row"+i).value ); }
-		catch(e) { console.log(i); }
+		rows.push( document.getElementById("row"+i).value );
 	for( let i=1; i<=numCols-newCol; i++ )
 		cols.push( document.getElementById("col"+i).value );
 	
 	if( newRow ) rows.push( "1fr" );
 	if( newCol ) cols.push( "1fr" );
 	
-	parent.innerHTML = "";
+	grid.innerHTML = "";
 	
 	for( let row in rows ) {
 		for( let col in cols ) {
@@ -177,15 +183,15 @@ function reflow(newRow=0, newCol=0) {
 			if( row == 0 ) {
 				let elem = document.createElement("div");
 				if( noborder ) elem.className = "input";
-				if( col == 0 ) { parent.appendChild( elem ); continue; }
+				if( col == 0 ) { grid.appendChild( elem ); continue; }
 				
 				let input = document.createElement("input");
 				input.setAttribute( "type", "text" );
 				input.setAttribute( "id", "col"+col );
 				let val = ( cols[col] == "" ) ? "1fr" : cols[col];
-				input.setAttribute( "value", val ); // if statement / use previous value if exists
+				input.setAttribute( "value", val );
 				elem.appendChild( input );
-				parent.appendChild( elem );
+				grid.appendChild( elem );
 			}
 			else {
 				let elem = document.createElement("div");
@@ -195,18 +201,40 @@ function reflow(newRow=0, newCol=0) {
 					input.setAttribute( "type", "text" );
 					input.setAttribute( "id", "row"+row );
 					let val = ( rows[row] == "" ) ? "1fr" : rows[row];
-					input.setAttribute( "value", val ); // if statement / use previous value if exists
+					input.setAttribute( "value", val );
 					elem.appendChild( input );
 				}
 				else {
 					elem.setAttribute( "data-cell", row+","+col );
 				}
-				parent.appendChild( elem );
+				grid.appendChild( elem );
 			}
 		}
 	}
 	addOnBlur();
 	update();
+}
+
+function addRegion() {
+	topLeft, bottomRight = null;
+	addingRegion = true;
+	regionName = prompt("Name of region");
+	document.getElementById("messages").innerHTML = "Click the top left corner of the region";
+}
+function setRegion() {
+	for( let x=0; x<numCols; x++ ) {
+		for( let y=0; y<numRows; y++ ) {
+			if(
+				x+1 >= topLeft[1] &&
+				x+1 <= bottomRight[1] &&
+				y+1 >= topLeft[0] &&
+				y+1 <= bottomRight[0]
+			) {
+				regions[y][x] = regionName;
+			}
+		}
+	}
+	nameRegions();
 }
 
 function addOnBlur() {
@@ -221,7 +249,19 @@ document.getElementById("generated-grid").addEventListener( "click", (e) => {
 	let loc = e.target.getAttribute("data-cell");
 	if( loc !== null ) {
 		let [row, col] = loc.split(",");
-		console.log( row, col );
+		if( topLeft === null && addingRegion === true ) {
+			topLeft = [row, col];
+			bottomRight = null;
+			document.getElementById("messages").innerHTML = "Click the bottom right corner of the region";
+		}
+		else if( addingRegion === true ) {
+			bottomRight = [row, col];
+			setRegion();
+			addingRegion = false;
+			topLeft = null;
+			bottomRight = null;
+			document.getElementById("messages").innerHTML = "";
+		}
 	}
 }, false );
 
