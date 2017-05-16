@@ -102,14 +102,15 @@ let numRows = 2;
 let numCols = 2;
 
 let regions = [
-	[ ".", "." ],
-	[ ".", "." ]
+	[ [".", null] , [".", null] ],
+	[ [".", null] , [".", null] ]
 ];
 
 let addingRegion = false;
 let topLeft = null;
 let bottomRight = null; // store corners for regions (temporary)
 let regionName = null;
+let color = null;
 
 let grid = document.getElementById("generated-grid");
 
@@ -128,11 +129,13 @@ function update() {
 
 	// display code
 	let formattedCode = "grid-template:<br/>";
-	let formatRow = (i) => "\" " + regions[i].join(" ") + " \" " + rows[i+1];
+	let formatRow = (i) => "\" " + regions[i].map((i)=>i[0]).join(" ") + " \" " + rows[i+1];
 	for( let i=0; i<numRows; i++ ) formattedCode += "    " + formatRow(i) + "<br/>";
 	formattedCode += "    / " + cols.slice(1).join(" ");
 	formattedCode += ";";
 	document.getElementById("output").innerHTML = formattedCode;
+	
+	nameRegions();
 }
 
 function nameRegions() {
@@ -140,8 +143,9 @@ function nameRegions() {
 		let loc = child.getAttribute("data-cell");
 		if( loc === null ) continue;
 		let [row, col] = loc.split(",");
-		let name = regions[row-1][col-1];
-		if( name !== "." ) child.innerHTML = name;
+		let cell = regions[row-1][col-1];
+		if( cell[0] !== "." ) child.innerHTML = cell[0];
+		if( cell[1] !== null ) child.style.background = cell[1];
 	}
 }
 
@@ -149,6 +153,7 @@ function addRow() {
 	numRows++;
 	regions.push( new Array( numCols ).fill(".") );
 	reflow(1,0);
+	update();
 }
 function remRow() {
 	if( numRows == 1 ) return;
@@ -222,19 +227,20 @@ function reflow(newRow=0, newCol=0) {
 function addRegion() {
 	topLeft, bottomRight = null;
 	addingRegion = true;
-	regionName = prompt("Name of region");
-	document.getElementById("messages").innerHTML = "Click the top left corner of the region";
+	regionName = prompt("Name of area");
+	color = prompt("Enter a valid CSS color");
+	document.getElementById("messages").innerHTML = "Click the top left corner of the area";
 }
 function setRegion() {
 	for( let x=0; x<numCols; x++ ) {
 		for( let y=0; y<numRows; y++ ) {
 			if(
-				x+1 >= topLeft[1] &&
-				x+1 <= bottomRight[1] &&
-				y+1 >= topLeft[0] &&
-				y+1 <= bottomRight[0]
+				x+1 >= topLeft[1][0] &&
+				x+1 <= bottomRight[1][0] &&
+				y+1 >= topLeft[0][0] &&
+				y+1 <= bottomRight[0][0]
 			) {
-				regions[y][x] = regionName;
+				regions[y][x] = [regionName, color];
 			}
 		}
 	}
@@ -256,7 +262,7 @@ document.getElementById("generated-grid").addEventListener( "click", (e) => {
 		if( topLeft === null && addingRegion === true ) {
 			topLeft = [row, col];
 			bottomRight = null;
-			document.getElementById("messages").innerHTML = "Click the bottom right corner of the region";
+			document.getElementById("messages").innerHTML = "Click the bottom right corner of the area";
 		}
 		else if( addingRegion === true ) {
 			bottomRight = [row, col];
