@@ -1,0 +1,111 @@
+* {
+	padding: 0;
+	margin: 0;
+	font-family: Arial, "Liberation Sans", sans-serif;
+}
+
+body {
+	height: 100vh;
+	display: grid;
+	grid-template:
+		" left buttons " 200px
+		" left right " auto
+		" footer footer " 50px
+		/ auto 500px;
+}
+
+#generated-grid {
+	display: grid;
+	grid-area: left;
+	grid-template: 100px var(--rows) / 100px var(--cols);
+	padding: 0 50px 50px 0;
+}
+#generated-grid > *:not(.input) {
+	border: 1px solid black;
+}
+
+#generated-grid * {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+input, button {
+	width: 60px;
+	padding: 0.5em;
+	text-align: center;
+	background: #fff;
+	border: 1px solid #ddd;
+	outline-color: rgba(85, 85, 255, 0.4);
+	border-radius: 3px;
+	transition: background 100ms ease-in-out, border 100ms ease-in-out;
+}
+input:hover, button:hover {
+	border-color: #999;
+}
+
+#output {
+	padding: 0 50px 50px 0;
+	font-family: monospace;
+}
+#buttons {
+	grid-area: buttons;
+	padding: 50px 50px 50px 0;
+	display: grid;
+	grid-template: 2fr / repeat(3, 1fr);
+	grid-gap: 6px;
+}
+button {
+	width: auto;
+	outline-color: transparent;
+}
+button:hover {
+	background: rgba(85, 85, 255, 0.4);
+}
+
+#buttons span {
+	text-align: center;
+}
+span button {
+	width: 4rem;
+	height: 2rem;
+	font-size: 1rem;
+}
+span button:last-of-type {
+	border-radius: 0 0 4rem 4rem;
+}
+span button:first-of-type {
+	border-radius: 4rem 4rem 0 0;
+}
+span div {
+	width: 4rem;
+	height: 2rem;
+	margin: 0 auto;
+	box-sizing: border-box;
+	line-height: 2rem;
+	text-align: center;
+	border-left: 1px solid #ddd;
+	border-right: 1px solid #ddd;
+}
+span div:last-child {
+	border-bottom: 1px solid #ddd;
+}
+
+#messages {
+	margin-top: 0.7em;
+	text-align: center;
+}
+
+footer {
+	grid-area: footer;
+	background: #111;
+	color: #f7f7f7;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+a {
+	text-decoration: none;
+	color: #55f;
+}

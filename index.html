@@ -1,297 +1,42 @@
-<title>CSS Grid Layout Generator</title>
+<!DOCTYPE HTML>
+<html lang=en>
+<head>
+	<title>CSS Grid Layout Generator</title>
+	<link rel=stylesheet href=styles.css>
+	<script src=class.js></script>
+</head>
+<body>
+	<section id=generated-grid></section>
 
-<style>
-* {
-	padding: 0;
-	margin: 0;
-	font-family: Arial, "Liberation Sans", sans-serif;
-}
-body {
-	display: grid;
-	grid-template:
-		" left buttons " 200px
-		" left right " auto
-		" footer footer " 50px
-		/ auto 500px;
-}
+	<section id=buttons>
+		<span>
+			<button onclick=grid.addRow()>+</button>
+			<div>Row</div>
+			<button onclick=grid.remRow()>─</button>
+		</span>
 
-#generated-grid {
-	display: grid;
-	grid-area: left;
-	grid-template: 100px repeat(2, 1fr) / 100px repeat(2, 1fr);
-	padding: 0 50px 50px 0;
-}
-#generated-grid > *:not(.input) {
-	border: 1px solid black;
-}
+		<span>
+			<button onclick=grid.addCol()>+</button>
+			<div>Column</div>
+			<button onclick=grid.remCol()>─</button>
+		</span>
 
-#generated-grid * {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
+		<span>
+			<button onclick=grid.addRegion()>+</button>
+			<div>Region</div>
+		</span>
 
-input, button {
-	width: 80px;
-	padding: 0.5em;
-	text-align: center;
-	background: #fff;
-	border: 1px solid #ddd;
-	outline-color: rgba(85, 85, 255, 0.4);
-	border-radius: 3px;
-	transition: background 100ms ease-in;
-}
+		<div id=messages style='grid-column: span 3'></div>
+	</section>
 
-#output {
-	padding: 0 50px 50px 0;
-	font-family: monospace;
-}
-#buttons {
-	grid-area: buttons;
-	padding: 50px 50px 50px 0;
-}
-#buttons > div {
-	display: grid;
-	grid-template: repeat(4, 1fr) / repeat(2, 1fr);
-	grid-gap: 6px;
-}
-button {
-	width: auto;
-}
-button:hover {
-	background: rgba(85, 85, 255, 0.4);
-}
+	<pre id=output style=grid-area:right></pre>
 
-footer {
-	grid-area: footer;
-	background: #111;
-	color: #f7f7f7;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
+	<footer><span>
+		Created by Jacob Pratt (contact info on <a href=https://github.com/jhpratt target=_blank>GitHub</a>).
+		<a href=https://creativecommons.org/publicdomain/zero/1.0/ target=_blank>CC-0</a> (public domain).
+		<a href=https://github.com/jhpratt/grid target=_blank>Source code</a>.
+	</span></footer>
 
-a {
-	text-decoration: none;
-	color: #55F;
-	margin-left: 0.35em;
-}
-</style>
-
-<!-- data-cell is row,col -->
-
-<section id=generated-grid>
-	<div class=input></div>
-	<div class=input><input type=text id=col1 value=1fr></div>
-	<div class=input><input type=text id=col2 value=1fr></div>
-	<div class=input><input type=text id=row1 value=1fr></div>
-	<div data-cell=1,1></div>
-	<div data-cell=1,2></div>
-	<div class=input><input type=text id=row2 value=1fr></div>
-	<div data-cell=2,1></div>
-	<div data-cell=2,2></div>
-</section>
-
-<section id=buttons>
-	<div>
-		<button onclick=addRow()>Add row</button>
-		<button onclick=remRow()>Delete row</button>
-		<button onclick=addCol()>Add column</button>
-		<button onclick=remCol()>Delete column</button>
-		<button onclick=addRegion() style='grid-column: span 2'>Add region</button>
-		<div id=messages style='grid-column: span 2'></div>
-	</div>
-</section>
-
-<pre id=output style='grid-area: right'></pre>
-
-<footer>Created by Jacob Pratt (contact info on <a href=https://github.com/jhpratt>GitHub</a>). CC-0 (public domain). <a href=https://github.com/jhpratt/grid>Source code</a>.</footer>
-
-<script>
-'use strict';
-let numRows = 2;
-let numCols = 2;
-
-let regions = [
-	[['.', null], ['.', null]],
-	[['.', null], ['.', null]]
-];
-
-let addingRegion = false;
-let topLeft = null;
-let bottomRight = null; // store corners for regions (temporary)
-let regionName = null;
-let color = null;
-
-const grid = document.getElementById('generated-grid');
-
-function update() {
-	// start with ['100px'] for labels and buttons
-	let rows = ['100px'];
-	let cols = ['100px'];
-	for(let i=1; i<=numRows; i++)
-		rows.push(document.getElementById('row' + i).value);
-	for(let i=1; i<=numCols; i++)
-		cols.push(document.getElementById('col' + i).value);
-	
-	// update display
-	const format = rows.join(' ') + ' / ' + cols.join(' ');
-	document.getElementById('generated-grid').style['grid-template'] = format;
-
-	// display code
-	let formattedCode = 'grid-template:<br>';
-	const formatRow = i => '" ' + regions[i].map(i=>i[0]).join(' ') + ' " ' + rows[i+1];
-	for(let i=0; i<numRows; i++)
-		formattedCode += '    ' + formatRow(i) + '<br>';
-	formattedCode += '    / ' + cols.slice(1).join(' ') + ';';
-	document.getElementById('output').innerHTML = formattedCode;
-	
-	nameRegions();
-}
-
-function nameRegions() {
-	for(let child of grid.children) {
-		const loc = child.getAttribute('data-cell');
-		if(loc === null)
-			continue;
-		const [row, col] = loc.split(',');
-		const cell = regions[row-1][col-1];
-		if(cell[0] !== '.')
-			child.innerHTML = cell[0];
-		if(cell[1] !== null)
-			child.style.background = cell[1];
-	}
-}
-
-function addRow() {
-	numRows++;
-	regions.push(new Array(numCols).fill('.'));
-	reflow(1, 0);
-	update();
-}
-function remRow() {
-	if(numRows == 1)
-		return;
-	numRows--;
-	regions.pop();
-	reflow(0, 0);
-}
-function addCol() {
-	numCols++;
-	regions.forEach(arr => arr.push('.'));
-	reflow(0, 1);
-}
-function remCol() {
-	if(numCols == 1)
-		return;
-	numCols--;
-	regions.forEach(arr => arr.pop());
-	reflow(0, 0);
-}
-
-function reflow(newRow=0, newCol=0) {
-	let rows = ['100px'];
-	let cols = ['100px'];
-	for(let i=1; i<=numRows-newRow; i++)
-		rows.push(document.getElementById('row' + i).value);
-	for(let i=1; i<=numCols-newCol; i++)
-		cols.push(document.getElementById('col' + i).value);
-	
-	if(newRow)
-		rows.push('1fr');
-	if(newCol)
-		cols.push('1fr');
-	
-	grid.innerHTML = '';
-	
-	for(let row in rows) {
-		for(let col in cols) {
-			const noborder = row==0 || col==0;
-			if(row == 0) {
-				const elem = document.createElement('div');
-				if(noborder)
-					elem.className = 'input';
-				if(col == 0) {
-					grid.appendChild( elem );
-					continue;
-				}
-				
-				const input = document.createElement('input');
-				input.setAttribute('type', 'text');
-				input.setAttribute('id', 'col' + col);
-				const val = cols[col] == '' ? '1fr' : cols[col];
-				input.setAttribute('value', val);
-				elem.appendChild(input);
-				grid.appendChild(elem);
-			}
-			else {
-				const elem = document.createElement('div');
-				if(col == 0) {
-					if(noborder)
-						elem.className = 'input';
-					const input = document.createElement('input');
-					input.setAttribute('type', 'text');
-					input.setAttribute('id', 'row' + row);
-					const val = rows[row] == '' ? '1fr' : rows[row];
-					input.setAttribute('value', val);
-					elem.appendChild(input);
-				}
-				else
-					elem.setAttribute('data-cell', row + ',' + col);
-				grid.appendChild(elem);
-			}
-		}
-	}
-	addOnBlur();
-	update();
-}
-
-function addRegion() {
-	topLeft, bottomRight = null;
-	addingRegion = true;
-	regionName = prompt('Name of area').trim();
-	if(regionName == '')
-		regionName = '.';
-	color = prompt('Enter a valid CSS color');
-	document.getElementById('messages').innerHTML = 'Click the top left corner of the area';
-}
-function setRegion() {
-	for(let x=0; x<numCols; x++)
-		for(let y=0; y<numRows; y++)
-			if(x + 1 >= topLeft[1][0]
-			&& x + 1 <= bottomRight[1][0]
-			&& y + 1 >= topLeft[0][0]
-			&& y + 1 <= bottomRight[0][0])
-				regions[y][x] = [regionName, color];
-	nameRegions();
-}
-
-function addOnBlur() {
-	document.querySelectorAll('input[type=text]').forEach(elem => elem.addEventListener('blur', update));
-}
-addOnBlur();
-
-// onclick if is box
-document.getElementById('generated-grid').addEventListener('click', e => {
-	const loc = e.target.getAttribute('data-cell');
-	if(loc !== null) {
-		const [row, col] = loc.split(',');
-		if(topLeft === null && addingRegion === true) {
-			topLeft = [row, col];
-			bottomRight = null;
-			document.getElementById('messages').innerHTML = 'Click the bottom right corner of the area';
-		}
-		else if(addingRegion === true) {
-			bottomRight = [row, col];
-			setRegion();
-			addingRegion = false;
-			topLeft = null;
-			bottomRight = null;
-			document.getElementById('messages').innerHTML = '';
-			update(); // prints code
-		}
-	}
-}, false);
-
-update();
-</script>
+	<script>const grid = new Grid('generated-grid', 'output').render();</script>
+</body>
+</html>
